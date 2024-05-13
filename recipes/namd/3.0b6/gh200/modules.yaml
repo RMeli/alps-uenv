@@ -19,3 +19,9 @@ modules:
       exclude: ['%gcc@7.5.0', 'gcc %gcc@7.5.0']
       projections:
         all: '{name}/{version}'
+        charmpp backend=multicore: '{name}/multicore/{version}'
+        namd +single_node_gpu: '{name}/single-node/{version}'
+        charmpp backend=ofi: '{name}/ofi/{version}'
+        namd ^charmpp backend=ofi: '{name}/ofi/{version}'
+        fftw~mpi: '{name}/{version}'
+        fftw+mpi: '{name}/mpi/{version}'

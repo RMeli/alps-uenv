@@ -10,7 +10,27 @@ namd-single-node:
   - charmpp@7 backend=multicore +production +tracing
   - namd@3.0b6 +cuda cuda_arch=90 +single_node_gpu
   views:
-    develop:
+    namd-single-node-dev:
+      link: roots
+      exclude: ["namd"]
+    namd-single-node:
+      link: roots
+namd:
+  compiler:
+  - toolchain: gcc
+    spec: gcc@12.3
+  unify: true
+  specs:
+  - cuda@12
+  - fftw@3.3.10 +openmp
+  - tcl@8.5
+  - charmpp@7 backend=mpi +production +tracing ^cray-mpich
+  - namd@3.0b6 +cuda cuda_arch=90
+  mpi:
+    spec: cray-mpich
+    gpu: cuda
+  views:
+    namd-dev:
       link: roots
       exclude: ["namd"]
     namd:
