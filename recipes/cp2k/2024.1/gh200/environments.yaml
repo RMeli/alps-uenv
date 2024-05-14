@@ -1,0 +1,22 @@
+cp2k-nvgpu:
+  compiler:
+  - toolchain: gcc
+    spec: gcc@12.3
+  unify: true
+  specs:
+  - cuda@12.2 # Can't be newer than driver version, for DBCSR
+  - libxc ~cuda
+  - dbcsr@2.6.0 +cuda +shared +openmp ^cray-mpich
+  - cosma@2.6.6 +gpu_direct +scalapack +shared ^cray-mpich
+  - elpa ^cray-mpich
+  # cuda_arch=80 not yet supported by DBCSR and CP2K
+  - dbcsr@2.6.0 smm=blas +cuda cuda_arch=80 ^cray-mpich
+  - cp2k@2024.1 +libxc +libint +spglib +cosma +spla +elpa build_system=cmake +cuda cuda_arch=80 ^cray-mpich
+  variants:
+    - +mpi
+    - +cuda
+    - cuda_arch=90
+    - build_type=Release
+  mpi:
+    spec: cray-mpich
+    gpu: cuda
