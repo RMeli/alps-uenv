@@ -11,11 +11,12 @@ cp2k-nvgpu:
   - dbcsr@2.6.0 +cuda +shared +openmp ^cray-mpich
   - cosma@2.6.6 +gpu_direct +scalapack +shared ^cray-mpich
   - elpa ^cray-mpich
-  - cp2k@2024.1 +libxc +libint +spglib +cosma +elpa ~dlaf build_system=cmake ^cray-mpich
+  - dbcsr@git.tune_gh200=2.6.0 smm=blas ~examples ^cray-mpich
+  - cp2k@git.gh200=develop +libxc +libint +spglib +cosma +spla +elpa ~dlaf build_system=cmake ^cray-mpich
   variants:
     - +mpi
     - +cuda
-    - cuda_arch=80
+    - cuda_arch=90
     - build_type=Release
   mpi:
     spec: cray-mpich
