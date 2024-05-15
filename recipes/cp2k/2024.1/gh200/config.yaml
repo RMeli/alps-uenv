@@ -2,5 +2,5 @@ name: cp2k
 store: /user-environment
 spack:
   repo: https://github.com/spack/spack.git
-  commit: v0.21.2
+  commit: v0.22.0
 modules: True
