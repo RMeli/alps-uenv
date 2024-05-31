@@ -15,6 +15,7 @@ cp2k:
   - spglib
   - spla
   - elpa
+  - dla-future +mpi-gpu-aware
   # COSMA dependencies (need to be in the develop view)
   - tiled-mm
   - costa
@@ -25,7 +26,7 @@ cp2k:
   - sirius ~memory_pool
   # cuda_arch=90 not yet supported by DBCSR and CP2K
   - dbcsr +cuda cuda_arch=80
-  - cp2k@2024.1 +libxc +libint +spglib +cosma +spla +elpa +sirius lmax=5 +cuda cuda_arch=80 build_system=cmake ^cray-mpich
+  - cp2k@2024.1 +libxc +libint +spglib +cosma +spla +elpa +dlaf +sirius lmax=5 +cuda cuda_arch=80 build_system=cmake ^cray-mpich
   variants:
     - +mpi
     - +openmp
