@@ -1,0 +1,50 @@
+sirius:
+  compiler:
+      - toolchain: gcc
+        spec: gcc@11
+  unify: true
+  specs:
+  - cmake
+  - ninja
+  - pkgconfig
+  - cuda@12.4
+  - gsl +external-cblas
+  - openblas threads=openmp
+  - fftw
+  - netlib-scalapack
+  - libxc ~cuda
+  - spglib
+  - hdf5 +hl
+    #  - elpa
+  - dla-future
+  - umpire
+  # COSTA dependencies
+  - costa
+  - tiled-mm
+  # SIRIUS
+  - sirius@7.5.2 ~python +tests +fortran +scalapack ~elpa +dlaf
+  # Python module
+  # - python@3.11
+  # - py-pip
+  # - py-numpy
+  # - py-scipy
+  # - py-h5py
+  # - py-mpi4py
+  # - py-pyyaml
+  # - py-voluptuous
+  # - py-pybind11
+  variants:
+  - +openmp
+  - +mpi
+  - +cuda
+  - cuda_arch=90
+  - build_type=Release
+  mpi:
+    spec: cray-mpich
+    gpu: cuda
+  views:
+    sirius:
+      link: roots
+    develop:
+      link: roots
+      exclude: ["sirius"]

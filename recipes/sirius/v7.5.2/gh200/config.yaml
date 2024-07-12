@@ -1,0 +1,7 @@
+name: sirius
+store: /user-environment
+description: "SIRIUS: domain specific library for electronic structure calculations"
+spack:
+  repo: https://github.com/spack/spack.git
+  commit: v0.22.1
+modules: False
