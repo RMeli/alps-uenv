@@ -15,6 +15,7 @@ cp2k:
   - spglib
   - spla
   - elpa
+  - plumed
   # COSMA
   - tiled-mm
   - costa
@@ -23,21 +24,25 @@ cp2k:
   - hdf5
   - spfft
   - sirius ~memory_pool
-  # pika + DLA-Future
+  # pika
   - boost
   - fmt
   - spdlog
   - hwloc
   - mimalloc
   - pika@0.25
-  - whip
+  # DLA-Future
+  - blt
+  - camp
   - umpire
+  - whip
   - lapackpp
   - blaspp
   - dla-future@git.202408-develop=0.6.0 +mpi_gpu_aware
+  - dla-future-fortran
   # CP2K
   - dbcsr@2.7.0
-  - cp2k@git.e4b6ebc72d7d1667f025f0b799e00e42ef481089=master +libxc +libint +spglib +cosma +spla +elpa +dlaf +sirius lmax=5 build_system=cmake
+  - cp2k@git.e4b6ebc72d7d1667f025f0b799e00e42ef481089=master +libxc +libint +spglib +cosma +spla +elpa +dlaf +sirius +plumed lmax=5 build_system=cmake
   variants:
     - +mpi
     - +openmp
