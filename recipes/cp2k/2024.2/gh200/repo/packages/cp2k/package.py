@@ -46,6 +46,7 @@ class Cp2k(MakefilePackage, CMakePackage, CudaPackage, ROCmPackage):
 
     license("GPL-2.0-or-later")
 
+    version("2024.2", sha256="cc3e56c971dee9e89b705a1103765aba57bf41ad39a11c89d3de04c8b8cdf473")
     version("2024.1", sha256="a7abf149a278dfd5283dc592a2c4ae803b37d040df25d62a5e35af5c4557668f")
     version("2023.2", sha256="adbcc903c1a78cba98f49fe6905a62b49f12e3dfd7cedea00616d1a5f50550db")
     version("2023.1", sha256="dff343b4a80c3a79363b805429bdb3320d3e1db48e0ff7d20a3dfd1c946a51ce")
@@ -236,7 +237,7 @@ class Cp2k(MakefilePackage, CMakePackage, CudaPackage, ROCmPackage):
             depends_on("dla-future +cuda", when="+cuda")
             depends_on("dla-future +rocm", when="+rocm")
 
-        with when("@master"):
+        with when("@2024.2"):
             depends_on("dla-future-fortran@0.1.0:")
 
             # Use a direct dependency on dla-future so that constraints can be expressed

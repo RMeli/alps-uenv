@@ -30,7 +30,7 @@ cp2k:
   - spdlog
   - hwloc
   - mimalloc
-  - pika@0.25
+  - pika@0.26.1
   # DLA-Future
   - blt
   - camp
