@@ -38,11 +38,11 @@ cp2k:
   - whip
   - lapackpp
   - blaspp
-  - dla-future@git.202408-develop=0.6.0 +mpi_gpu_aware
+  - dla-future@0.6.0 +mpi_gpu_aware
   - dla-future-fortran
   # CP2K
   - dbcsr@2.7.0
-  - cp2k@git.e4b6ebc72d7d1667f025f0b799e00e42ef481089=master +libxc +libint +spglib +cosma +spla +elpa +dlaf +sirius +plumed lmax=5 build_system=cmake
+  - cp2k@2024.2 +libxc +libint +spglib +cosma +spla +elpa +dlaf +sirius +plumed lmax=5 build_system=cmake
   variants:
     - +mpi
     - +openmp
