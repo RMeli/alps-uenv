@@ -1,7 +1,7 @@
 sirius:
   compiler:
       - toolchain: gcc
-        spec: gcc@11
+        spec: gcc@12.3
   unify: true
   specs:
   - cmake
@@ -12,27 +12,18 @@ sirius:
   - openblas threads=openmp
   - fftw
   - netlib-scalapack
-  - libxc ~cuda
+  - libxc@6 ~cuda
   - spglib
   - hdf5 +hl
-    #  - elpa
-  - dla-future
+  - elpa
+  - dla-future@0.7.3 +miniapps +mpi_gpu_aware +hdf5
   - umpire
   # COSTA dependencies
   - costa
   - tiled-mm
   # SIRIUS
-  - sirius@7.5.2 ~python +tests +fortran +scalapack ~elpa +dlaf
-  # Python module
-  # - python@3.11
-  # - py-pip
-  # - py-numpy
-  # - py-scipy
-  # - py-h5py
-  # - py-mpi4py
-  # - py-pyyaml
-  # - py-voluptuous
-  # - py-pybind11
+  - gsl@2.7.1 # 2.8 fails to build
+  - sirius@7.6.1 ~python +tests +fortran +scalapack +elpa +dlaf
   variants:
   - +openmp
   - +mpi
