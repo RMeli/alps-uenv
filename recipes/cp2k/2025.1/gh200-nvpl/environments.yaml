@@ -10,7 +10,7 @@ cp2k:
   - nvpl-blas
   - nvpl-lapack
   - nvpl-scalapack
-  - nvpl-fft
+  - nvpl-fft@0.4
   - libxc@7 ~cuda build_system=cmake
   - spglib
   - spla
