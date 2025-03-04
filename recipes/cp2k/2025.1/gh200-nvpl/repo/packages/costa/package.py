@@ -79,7 +79,7 @@ class Costa(CMakePackage):
         elif spec.satisfies("^cray-libsci"):
             return "CRAY_LIBSCI"
         elif spec.satisfies("^nvpl-scalapack"):
-            return "NPVL"
+            return "NVPL"
 
         return "CUSTOM"
 
