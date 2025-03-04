@@ -1,0 +1,123 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 7b958c7..e40d363 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -1,5 +1,6 @@
+ cmake_minimum_required(VERSION 3.22 FATAL_ERROR)
+ 
++include(FetchContent)
+ include(CMakeDependentOption)
+ cmake_policy(SET CMP0048 NEW)
+ 
+@@ -14,7 +15,7 @@ include(cmake/build_type.cmake)
+ include(cmake/adjust_mpiexec_flags.cmake)
+ 
+ # Options
+-set(COSTA_SCALAPACK_IMPLEMENTATION_LIST "OFF" "MKL" "CRAY_LIBSCI" "CUSTOM")
++set(COSTA_SCALAPACK_IMPLEMENTATION_LIST "OFF" "MKL" "CRAY_LIBSCI" "NVPL" "CUSTOM")
+ 
+ option(COSTA_WITH_TESTS "Generate the test target." OFF)
+ option(COSTA_WITH_APPS "Generate the miniapp targets." OFF)
+@@ -22,14 +23,17 @@ option(COSTA_WITH_BENCHMARKS "Generate the benchmark targets." OFF)
+ option(COSTA_WITH_PROFILING "Enable profiling." OFF)
+ option(BUILD_SHARED_LIBS "Build shared libraries." OFF)
+ 
+-set(COSTA_SCALAPACK "OFF" CACHE STRING "ScaLAPACK backend. Can be MKL, CRAY_LIBSCI, CUSTOM or OFF.")
++set(COSTA_SCALAPACK "OFF" CACHE STRING "ScaLAPACK backend. Can be MKL, CRAY_LIBSCI, NVPL, CUSTOM or OFF.")
+ set_property(CACHE COSTA_SCALAPACK PROPERTY STRINGS ${COSTA_SCALAPACK_IMPLEMENTATION_LIST})
+ 
++# always generate compile_commands.json for IDEs
++set(CMAKE_EXPORT_COMPILE_COMMANDS "YES")
++
+ # check if scalapack backend is valid
+ message(STATUS "Selected ScaLAPACK backend (or implementation) for COSTA: ${COSTA_SCALAPACK}")
+ 
+ if(NOT COSTA_SCALAPACK IN_LIST COSTA_SCALAPACK_IMPLEMENTATION_LIST)
+-  message(FATAL_ERROR "Invalid value for COSTA_SCALAPACK! It should be MKL, CRAY_LIBSCI, CUSTOM or OFF.")
++  message(FATAL_ERROR "Invalid value for COSTA_SCALAPACK! It should be MKL, CRAY_LIBSCI, NVPL, CUSTOM or OFF.")
+ endif()
+ 
+ # preserve rpaths when installing and make the install folder relocatable
+@@ -58,16 +62,20 @@ adjust_mpiexec_flags()
+ # OpenMP
+ find_package(OpenMP COMPONENTS CXX REQUIRED)
+ 
+-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -funroll-loops -DNDEBUG")
+-
++SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -funroll-loops")
++SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -O0 -DDEBUG")
+ 
+ # Bundled dependencies
+ #
+-
+ # Do not install cxxopts when including it.
+ 
+ if (COSTA_WITH_TESTS OR COSTA_WITH_APPS)
+-  find_package(cxxopts REQUIRED)
++  FetchContent_Declare(cxxopts
++                       GIT_REPOSITORY https://github.com/jarro2783/cxxopts.git
++                       GIT_TAG        4bf61f08697b110d9e3991864650a405b3dd515d # v3.2.1
++                       FIND_PACKAGE_ARGS NAMES cxxopts
++  )
++  FetchContent_MakeAvailable(cxxopts)
+ endif()
+ 
+ if (COSTA_WITH_TESTS)
+@@ -76,7 +84,13 @@ if (COSTA_WITH_TESTS)
+ endif()
+ 
+ if(COSTA_WITH_PROFILING)
+-  find_package(semiprof REQUIRED)
++  FetchContent_Declare(
++    semiprof
++    GIT_REPOSITORY  https://github.com/bcumming/semiprof.git
++    GIT_TAG         f132142ff2215dfa073e416fa7911d8877d62752
++    FIND_PACKAGE_ARGS NAMES semiprof
++  )
++  FetchContent_MakeAvailable(semiprof)
+ endif()
+ 
+ if (NOT COSTA_SCALAPACK STREQUAL "OFF")
+@@ -113,6 +127,7 @@ install(FILES "${costa_BINARY_DIR}/costaConfig.cmake"
+   "${costa_BINARY_DIR}/costaConfigVersion.cmake"
+   "${costa_SOURCE_DIR}/cmake/FindMKL.cmake"
+   "${costa_SOURCE_DIR}/cmake/FindCRAY_LIBSCI.cmake"
++  "${costa_SOURCE_DIR}/cmake/Findnvpl.cmake"
+   "${costa_SOURCE_DIR}/cmake/FindSCALAPACK.cmake"
+   DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/costa")
+ 
+diff --git a/cmake/FindSCALAPACK.cmake b/cmake/FindSCALAPACK.cmake
+index 8d93527..aac4dc1 100644
+--- a/cmake/FindSCALAPACK.cmake
++++ b/cmake/FindSCALAPACK.cmake
+@@ -8,6 +8,9 @@ elseif(COSTA_SCALAPACK STREQUAL "CRAY_LIBSCI")
+   find_package(CRAY_LIBSCI REQUIRED)
+   get_target_property(COSTA_SCALAPACK_LINK_LIBRARIES costa::BLAS::SCI::scalapack_link
+     INTERFACE_LINK_LIBRARIES)
++elseif(COSTA_SCALAPACK STREQUAL "NVPL")
++  find_package(nvpl REQUIRED)
++  get_target_property(COSTA_SCALAPACK_LINK_LIBRARIES costa::BLAS::NVPL::scalapack_link
+ elseif(COSTA_SCALAPACK STREQUAL "CUSTOM")
+   find_library(COSTA_SCALAPACK_LINK_LIBRARIES
+     NAMES scalapack
+diff --git a/cmake/costaConfig.cmake.in b/cmake/costaConfig.cmake.in
+index 8fae534..a474629 100644
+--- a/cmake/costaConfig.cmake.in
++++ b/cmake/costaConfig.cmake.in
+@@ -10,7 +10,6 @@ include(CMakeFindDependencyMacro)
+ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR} ${CMAKE_MODULE_PATH})
+ 
+ set(MKL_ROOT "@MKL_ROOT@")
+-set(MPI_CXX_COMPILER "@MPI_CXX_COMPILER@")
+ 
+ set(MPI_DETERMINE_LIBRARY_VERSION TRUE)
+ set(COSTA_SCALAPACK "@COSTA_SCALAPACK@")
+@@ -18,8 +17,6 @@ set(COSTA_SCALAPACK "@COSTA_SCALAPACK@")
+ find_dependency(MPI)
+ find_dependency(OpenMP)
+ 
+-set(COSTA_SCALAPACK "@COSTA_SCALAPACK@")
+-
+ if (NOT COSTA_SCALAPACK STREQUAL "OFF")
+   find_dependency(SCALAPACK)
+ endif ()

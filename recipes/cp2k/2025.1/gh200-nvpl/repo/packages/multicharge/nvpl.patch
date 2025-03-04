@@ -1,0 +1,82 @@
+diff --git a/config/cmake/Findcustom-blas.cmake b/config/cmake/Findcustom-blas.cmake
+index d3760b0..ec294fd 100644
+--- a/config/cmake/Findcustom-blas.cmake
++++ b/config/cmake/Findcustom-blas.cmake
+@@ -19,12 +19,29 @@ endif()
+ 
+ if(WITH_ILP64)
+   set(BLA_SIZEOF_INTEGER 8)
++  set(_nvpl_int "_ilp64")
++else()
++  set(_nvpl_int "_lp64")
+ endif()
+ 
+ if(NOT BLAS_FOUND)
+-  find_package("BLAS" REQUIRED)
+-  if(NOT TARGET "BLAS::BLAS")
++  if(BLA_VENDOR STREQUAL "NVPL")
++    find_package("nvpl_blas" REQUIRED)
++
++    if((BLA_THREAD STREQUAL "OMP") OR (BLA_THREAD STREQUAL "ANY"))
++      set(_nvpl_thread "_omp")
++    else()
++      set(_nvpl_thread "_seq")
++    endif()
++
+     add_library("BLAS::BLAS" INTERFACE IMPORTED)
+-    target_link_libraries("BLAS::BLAS" INTERFACE "${BLAS_LIBRARIES}")
++    target_link_libraries("BLAS::BLAS" INTERFACE "nvpl::blas${_nvpl_int}${_nvpl_thread}")
++  else()
++    find_package("BLAS" REQUIRED)
++  
++    if(NOT TARGET "BLAS::BLAS")
++      add_library("BLAS::BLAS" INTERFACE IMPORTED)
++      target_link_libraries("BLAS::BLAS" INTERFACE "${BLAS_LIBRARIES}")
++    endif()
+   endif()
+ endif()
+diff --git a/config/cmake/Findcustom-lapack.cmake b/config/cmake/Findcustom-lapack.cmake
+index 0167a62..7b0cb36 100644
+--- a/config/cmake/Findcustom-lapack.cmake
++++ b/config/cmake/Findcustom-lapack.cmake
+@@ -19,10 +19,26 @@ endif()
+ 
+ if(WITH_ILP64)
+   set(BLA_SIZEOF_INTEGER 8)
++  set(_nvpl_int "_ilp64")
++else()
++  set(_nvpl_int "_lp64")
+ endif()
+ 
+ if(NOT LAPACK_FOUND)
+-  find_package("LAPACK" REQUIRED)
++  if(BLA_VENDOR STREQUAL "NVPL")
++    find_package("nvpl_lapack" REQUIRED)
++
++    if((BLA_THREAD STREQUAL "OMP") OR (BLA_THREAD STREQUAL "ANY"))
++      set(_nvpl_thread "_omp")
++    else()
++      set(_nvpl_thread "_seq")
++    endif()
++
++    add_library("LAPACK::LAPACK" INTERFACE IMPORTED)
++    target_link_libraries("LAPACK::LAPACK" INTERFACE "nvpl::lapack${_nvpl_int}${_nvpl_thread}")
++  else()
++    find_package("LAPACK" REQUIRED)
++  endif()
+ 
+   if(NOT TARGET "BLAS::BLAS")
+     find_package("custom-blas" REQUIRED)
+diff --git a/config/template.cmake b/config/template.cmake
+index 3b4262a..c4f831d 100644
+--- a/config/template.cmake
++++ b/config/template.cmake
+@@ -13,7 +13,7 @@ if(NOT TARGET "@PROJECT_NAME@::@PROJECT_NAME@")
+   endif()
+ 
+   if(NOT TARGET "LAPACK::LAPACK")
+-    find_dependency("LAPACK")
++    find_dependency("custom-lapack")
+   endif()
+ 
+   if(NOT TARGET "mctc-lib::mctc-lib")

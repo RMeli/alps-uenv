@@ -4,7 +4,7 @@ cp2k:
     spec: gcc@12.3
   unify: true
   specs:
-  - cmake@master
+  - cmake@3
   - ninja
   - cuda@12.4 # Can't be newer than driver version, for DBCSR
   - nvpl-blas

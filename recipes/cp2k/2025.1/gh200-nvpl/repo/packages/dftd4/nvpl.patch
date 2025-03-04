@@ -1,0 +1,53 @@
+diff --git a/config/cmake/Findcustom-blas.cmake b/config/cmake/Findcustom-blas.cmake
+index f09e1bf..09c904d 100644
+--- a/config/cmake/Findcustom-blas.cmake
++++ b/config/cmake/Findcustom-blas.cmake
+@@ -20,9 +20,30 @@ if(NOT BLAS_FOUND)
+     # https://cmake.org/cmake/help/v3.14/module/FindBLAS.html#result-variables
+     enable_language("C")
+   endif()
+-  find_package("BLAS" REQUIRED)
+-  if(NOT TARGET "BLAS::BLAS")
+-    add_library("BLAS::BLAS" INTERFACE IMPORTED)
+-    target_link_libraries("BLAS::BLAS" INTERFACE "${BLAS_LIBRARIES}")
++
++  if(BLA_VENDOR STREQUAL "NVPL")
++    find_package("nvpl_blas" REQUIRED)
++    if(BLA_SIZEOF_INTEGER EQUAL 8)
++      set(_nvpl_int "_ilp64")
++    else()
++      set(_nvpl_int "_lp64")
++    endif()
++
++    if((BLA_THREAD STREQUAL "OMP") OR (BLA_THREAD STREQUAL "ANY"))
++      set(_nvpl_thread "_omp")
++    else()
++      set(_nvpl_thread "_seq")
++    endif()
++
++    if(NOT TARGET "BLAS::BLAS")
++      add_library("BLAS::BLAS" INTERFACE IMPORTED)
++      target_link_libraries("BLAS::BLAS" INTERFACE "nvpl::blas${_nvpl_int}${_nvpl_thread}")
++    endif()
++  else()
++    find_package("BLAS" REQUIRED)
++    if(NOT TARGET "BLAS::BLAS")
++      add_library("BLAS::BLAS" INTERFACE IMPORTED)
++      target_link_libraries("BLAS::BLAS" INTERFACE "${BLAS_LIBRARIES}")
++    endif()
+   endif()
+-endif()
++ endif()
+diff --git a/config/template.cmake b/config/template.cmake
+index 8b5141d..4e4175b 100644
+--- a/config/template.cmake
++++ b/config/template.cmake
+@@ -20,7 +20,7 @@ if(NOT TARGET "@PROJECT_NAME@::@PROJECT_NAME@")
+   endif()
+ 
+   if(NOT TARGET "BLAS::BLAS")
+-    find_dependency("BLAS")
++    find_dependency("custom-blas")
+   endif()
+ 
+   if(NOT TARGET "mctc-lib::mctc-lib")

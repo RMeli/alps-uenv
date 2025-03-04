@@ -19,7 +19,10 @@ class Multicharge(CMakePackage, MesonPackage):
 
     build_system("cmake", "meson", default="meson")
 
-    version("0.3.0", sha256="e8f6615d445264798b12d2854e25c93938373dc149bb79e6eddd23fc4309749d")
+    version(
+        "0.3.0",
+        sha256="e8f6615d445264798b12d2854e25c93938373dc149bb79e6eddd23fc4309749d",
+    )
 
     variant("openmp", default=True, description="Enable OpenMP support")
 
@@ -27,10 +30,16 @@ class Multicharge(CMakePackage, MesonPackage):
     depends_on("mctc-lib build_system=cmake", when="build_system=cmake")
     depends_on("mctc-lib build_system=meson", when="build_system=meson")
 
+    patch("nvpl.patch")
+
 
 class CMakeBuilder(cmake.CMakeBuilder):
     def cmake_args(self):
         args = [self.define_from_variant("WITH_OpenMP", "openmp")]
+
+        if self.spec.satisfies("^nvpl-blas"):
+            args.append(self.define("BLA_VENDOR", "NVPL"))
+
         return args
 
 
