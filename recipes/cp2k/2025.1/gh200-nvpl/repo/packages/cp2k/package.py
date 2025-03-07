@@ -444,6 +444,8 @@ class Cp2k(MakefilePackage, CMakePackage, CudaPackage, ROCmPackage):
         when="@2024.2:2024.3",
     )
 
+    patch("nvpl.patch")
+
     def patch(self):
         # Patch for an undefined constant due to incompatible changes in ELPA
         if self.spec.satisfies("@9.1:2022.2 +elpa"):
@@ -1143,6 +1145,10 @@ class CMakeBuilder(cmake.CMakeBuilder):
                 ]
             else:
                 args += ["-DCP2K_SCALAPACK_VENDOR=MKL"]
+        elif blas.name == "nvpl-blas":
+            # TODO: ScaLAPACK vendor
+            # Maybe better to use the option below and let Spack deal with it, but needs fixes for NVPL-FFT
+            args.append(["-DCP2K_BLAS_VENDOR=NVPL", "-DCP2K_SCALAPACK_VENDOR=NVPL"])
         else:
             args.extend(
                 [

@@ -21,19 +21,58 @@ class Cosma(CMakePackage):
     # note: The default archives produced with github do not have the archives
     #       of the submodules.
     version("master", branch="master", submodules=False)
-    version("2.6.6", sha256="1604be101e77192fbcc5551236bc87888d336e402f5409bbdd9dea900401cc37")
-    version("2.6.5", sha256="10d9b7ecc1ce44ec5b9e0c0bf89278a63029912ec3ea99661be8576b553ececf")
-    version("2.6.4", sha256="6d7bd5e3005874af9542a329c93e7ccd29ca1a5573dae27618fac2704fa2b6ab")
-    version("2.6.3", sha256="c2a3735ea8f860930bea6706d968497d72a1be0498c689b5bc4a951ffc2d1146")
-    version("2.6.2", sha256="2debb5123cc35aeebc5fd2f8a46cfd6356d1e27618c9bb57129ecd09aa400940")
-    version("2.6.1", sha256="69aa6634a030674f0d9be61e7b0bf0dc17acf0fc9e7a90b40e3179e2254c8d67")
-    version("2.5.1", sha256="085b7787597374244bbb1eb89bc69bf58c35f6c85be805e881e1c0b25166c3ce")
-    version("2.5.0", sha256="7f68bb0ee5c80f9b8df858afcbd017ad4ed87ac09439d13d7d890844dbdd3d54")
-    version("2.4.0", sha256="5714315ce06d48037f86cfee2d7f19340643fee95e9d7f1e92dc1b623b67e395")
-    version("2.3.0", sha256="0c01c2deb5a0cd177952178350188a62c42ce55e604d7948ac472f55bf0d4815")
-    version("2.2.0", sha256="1eb92a98110df595070a12193b9221eecf9d103ced8836c960f6c79a2bd553ca")
-    version("2.0.7", sha256="8d70bfcbda6239b6a8fbeaca138790bbe58c0c3aa576879480d2632d4936cf7e")
-    version("2.0.2", sha256="4f3354828bc718f3eef2f0098c3bdca3499297497a220da32db1acd57920c68d")
+    version(
+        "2.6.6",
+        sha256="1604be101e77192fbcc5551236bc87888d336e402f5409bbdd9dea900401cc37",
+    )
+    version(
+        "2.6.5",
+        sha256="10d9b7ecc1ce44ec5b9e0c0bf89278a63029912ec3ea99661be8576b553ececf",
+    )
+    version(
+        "2.6.4",
+        sha256="6d7bd5e3005874af9542a329c93e7ccd29ca1a5573dae27618fac2704fa2b6ab",
+    )
+    version(
+        "2.6.3",
+        sha256="c2a3735ea8f860930bea6706d968497d72a1be0498c689b5bc4a951ffc2d1146",
+    )
+    version(
+        "2.6.2",
+        sha256="2debb5123cc35aeebc5fd2f8a46cfd6356d1e27618c9bb57129ecd09aa400940",
+    )
+    version(
+        "2.6.1",
+        sha256="69aa6634a030674f0d9be61e7b0bf0dc17acf0fc9e7a90b40e3179e2254c8d67",
+    )
+    version(
+        "2.5.1",
+        sha256="085b7787597374244bbb1eb89bc69bf58c35f6c85be805e881e1c0b25166c3ce",
+    )
+    version(
+        "2.5.0",
+        sha256="7f68bb0ee5c80f9b8df858afcbd017ad4ed87ac09439d13d7d890844dbdd3d54",
+    )
+    version(
+        "2.4.0",
+        sha256="5714315ce06d48037f86cfee2d7f19340643fee95e9d7f1e92dc1b623b67e395",
+    )
+    version(
+        "2.3.0",
+        sha256="0c01c2deb5a0cd177952178350188a62c42ce55e604d7948ac472f55bf0d4815",
+    )
+    version(
+        "2.2.0",
+        sha256="1eb92a98110df595070a12193b9221eecf9d103ced8836c960f6c79a2bd553ca",
+    )
+    version(
+        "2.0.7",
+        sha256="8d70bfcbda6239b6a8fbeaca138790bbe58c0c3aa576879480d2632d4936cf7e",
+    )
+    version(
+        "2.0.2",
+        sha256="4f3354828bc718f3eef2f0098c3bdca3499297497a220da32db1acd57920c68d",
+    )
 
     depends_on("cxx", type="build")  # generated
 
@@ -80,7 +119,7 @@ class Cosma(CMakePackage):
         depends_on("costa+profiling", when="+profiling")
 
     patch("fj-ssl2.patch", when="^fujitsu-ssl2")
-    patch("mpi-view.patch")
+    patch("nvpl.patch")
 
     def setup_build_environment(self, env):
         if self.spec.satisfies("+cuda"):
@@ -96,6 +135,7 @@ class Cosma(CMakePackage):
             ("^netlib-lapack", "CUSTOM"),
             ("^openblas", "OPENBLAS"),
             ("^fujitsu-ssl2", "SSL2"),
+            ("^nvpl-blas", "NVPL"),
         ]
 
         if self.version >= Version("2.4.0"):
@@ -118,6 +158,8 @@ class Cosma(CMakePackage):
             return "MKL"
         elif spec.satisfies("^cray-libsci"):
             return "CRAY_LIBSCI"
+        elif spec.satisfies("^nvpl-scalapack"):
+            return "NVPL"
 
         return "CUSTOM"
 

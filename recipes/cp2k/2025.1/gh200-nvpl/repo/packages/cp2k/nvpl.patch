@@ -1,0 +1,129 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 77dba2e757..9c7f365159 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -148,7 +148,7 @@ set(CP2K_BLAS_VENDOR
+     "auto"
+     CACHE STRING "Blas library for computations on host")
+ 
+-set(CP2K_SCALAPACK_VENDOR_LIST "MKL" "SCI" "GENERIC")
++set(CP2K_SCALAPACK_VENDOR_LIST "MKL" "SCI" "NVPL" "GENERIC")
+ set(CP2K_SCALAPACK_VENDOR
+     "GENERIC"
+     CACHE STRING "scalapack vendor/generic backend")
+@@ -156,7 +156,8 @@ set_property(CACHE CP2K_SCALAPACK_VENDOR PROPERTY STRINGS
+                                                   ${CP2K_SCALAPACK_VENDOR_LIST})
+ 
+ if(NOT ${CP2K_SCALAPACK_VENDOR} IN_LIST CP2K_SCALAPACK_VENDOR_LIST)
+-  message(FATAL_ERROR "Invalid scalapack vendor backend")
++  message(FATAL_ERROR "Invalid ScaLAPACK vendor backend '${CP2K_SCALAPACK_VENDOR}'"
++                      "Valid options are: ${CP2K_SCALAPACK_VENDOR_LIST}")
+ endif()
+ 
+ set(CP2K_BUILD_OPTIONS_LIST "CUSTOM" "DEFAULT" "MINIMAL" "FULL" "SERIAL")
+@@ -645,7 +646,7 @@ endif()
+ # we set this variable to ON when we want fftw3 support (with or without MKL).
+ set(CP2K_USE_FFTW3_ OFF)
+ if(CP2K_USE_FFTW3)
+-  if(NOT CP2K_BLAS_VENDOR MATCHES "MKL" OR CP2K_USE_FFTW3_WITH_MKL)
++  if(NOT CP2K_BLAS_VENDOR MATCHES "MKL" OR NOT CP2K_BLAS_VENDOR STREQUAL "NVPL" OR CP2K_USE_FFTW3_WITH_MKL)
+     find_package(Fftw REQUIRED)
+     if(CP2K_ENABLE_FFTW3_THREADS_SUPPORT AND CP2K_ENABLE_FFTW3_OPENMP_SUPPORT)
+       message(
+@@ -669,9 +670,12 @@ if(CP2K_USE_FFTW3)
+       )
+     endif()
+     set(CP2K_USE_FFTW3_ ON)
+-  else()
++  elseif(CP2K_BLAS_VENDOR MATCHES "MKL")
+     message("-- Using the MKL implementation of FFTW3.")
+     set(CP2K_USE_FFTW3_MKL_ ON)
++  elseif(CP2K_BLAS_VENDOR STREQUAL "NVPL")
++    message("-- Using the NVPL implementation of FFTW3.")
++    set(CP2K_USE_FFTW3_MKL_ ON)
+   endif()
+ endif()
+ 
+diff --git a/cmake/modules/FindBlas.cmake b/cmake/modules/FindBlas.cmake
+index 09d2fdfe69..061730950e 100644
+--- a/cmake/modules/FindBlas.cmake
++++ b/cmake/modules/FindBlas.cmake
+@@ -28,6 +28,7 @@ if(NOT CP2K_CONFIG_PACKAGE)
+       "FlexiBLAS"
+       "Atlas"
+       "NVHPCBlas"
++      "NVPL"
+       "CUSTOM")
+ 
+   set(__BLAS_VENDOR_LIST ${CP2K_BLAS_VENDOR_LIST})
+diff --git a/cmake/modules/FindLapack.cmake b/cmake/modules/FindLapack.cmake
+index 8f1b714976..341d25128a 100644
+--- a/cmake/modules/FindLapack.cmake
++++ b/cmake/modules/FindLapack.cmake
+@@ -24,7 +24,7 @@ if(NOT CP2K_CONFIG_PACKAGE)
+ 
+   if(CP2K_BLAS_FOUND)
+     # LAPACK in the Intel MKL 10+ library?
+-    if(CP2K_BLAS_VENDOR MATCHES "MKL|OpenBLAS|Armpl|SCI|FlexiBLAS|NVHPC")
++    if(CP2K_BLAS_VENDOR MATCHES "MKL|OpenBLAS|Armpl|SCI|FlexiBLAS|NVHPC|NVPL")
+       # we just need to create the interface that's all
+       get_target_property(CP2K_LAPACK_INCLUDE_DIRS cp2k::BLAS::blas
+                           INTERFACE_INCLUDE_DIRECTORIES)
+diff --git a/cmake/modules/FindSCALAPACK.cmake b/cmake/modules/FindSCALAPACK.cmake
+index 951f0cd858..0db0b46433 100644
+--- a/cmake/modules/FindSCALAPACK.cmake
++++ b/cmake/modules/FindSCALAPACK.cmake
+@@ -25,8 +25,8 @@ if(NOT CP2K_CONFIG_PACKAGE)
+           "-                  FindScalapack warning                        -"
+           "-----------------------------------------------------------------"
+           "\n"
+-          "You may want to use mkl implementation of scalapack. To do this\n"
+-          "add -DCP2K_SCALAPACK_VENDOR=MKL to the cmake command line.      \n")
++          "You may want to use MKL implementation of ScaLAPACK. To do this\n"
++          "add -DCP2K_SCALAPACK_VENDOR=MKL to the CMake command line.\n\n")
+     endif()
+ 
+     if(TARGET cp2k::BLAS::SCI::scalapack_link)
+@@ -36,8 +36,19 @@ if(NOT CP2K_CONFIG_PACKAGE)
+           "-                  FindScalapack warning                        -\n"
+           "-----------------------------------------------------------------\n"
+           "\n"
+-          "You may want to use Cray implementation of scalapack. To do this \n"
+-          "add -DCP2K_SCALAPACK_VENDOR=SCI to the cmake command line\n\n")
++          "You may want to use Cray implementation of ScaLAPACK. To do this \n"
++          "add -DCP2K_SCALAPACK_VENDOR=SCI to the CMake command line.\n\n")
++    endif()
++
++    if(TARGET cp2k::BLAS::NVPL::scalapack_link)
++      message(
++        WARNING
++          "-----------------------------------------------------------------\n"
++          "-                  FindScalapack warning                        -\n"
++          "-----------------------------------------------------------------\n"
++          "\n"
++          "You may want to use NVPL implementation of ScaLAPACK. To do this \n"
++          "add -DCP2K_SCALAPACK_VENDOR=NVPL to the CMake command line.\n\n")
+     endif()
+ 
+     # try to detect location with pkgconfig
+@@ -64,16 +75,18 @@ if(NOT CP2K_CONFIG_PACKAGE)
+     endif()
+ 
+   elseif(TARGET cp2k::BLAS::MKL::scalapack_link)
+-    # we have mkl check for the different mkl target
+     get_target_property(
+       CP2K_SCALAPACK_LINK_LIBRARIES cp2k::BLAS::MKL::scalapack_link
+       INTERFACE_LINK_LIBRARIES)
+     set(CP2K_SCALAPACK_FOUND yes)
+   elseif(TARGET cp2k::BLAS::SCI::scalapack_link)
+-    # we have mkl check for the different mkl target
+     get_target_property(
+       CP2K_SCALAPACK_LINK_LIBRARIES cp2k::BLAS::SCI::scalapack_link
+       INTERFACE_LINK_LIBRARIES)
++  elseif(TARGET cp2k::BLAS::NVPL::scalapack_link)
++    get_target_property(
++      CP2K_SCALAPACK_LINK_LIBRARIES cp2k::BLAS::NVPL::scalapack_link
++      INTERFACE_LINK_LIBRARIES)
+   endif()
+ endif()
+ # check if found

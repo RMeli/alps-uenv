@@ -1,0 +1,227 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 1fd1e55..7cf680e 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -18,8 +18,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS "YES") # always write compile_commands.json
+ #
+ 
+ set(COSMA_GPU_BACKENDS_LIST "CUDA" "ROCM")
+-set(COSMA_SCALAPACK_LIST "OFF" "MKL" "CRAY_LIBSCI" "CUSTOM")
+-set(COSMA_BLAS_LIST   "auto" "MKL" "OPENBLAS" "CRAY_LIBSCI" "CUSTOM" "BLIS" "ATLAS" "CUDA" "ROCM" "OFF")
++set(COSMA_SCALAPACK_LIST "OFF" "MKL" "CRAY_LIBSCI" "NVPL" "CUSTOM")
++set(COSMA_BLAS_LIST   "auto" "MKL" "OPENBLAS" "CRAY_LIBSCI" "NVPL" "CUSTOM" "BLIS" "ATLAS" "CUDA" "ROCM" "OFF")
+ option(COSMA_WITH_TESTS "Generate the test target." ON)
+ option(COSMA_WITH_APPS "Generate the miniapp targets." ON)
+ option(COSMA_WITH_BENCHMARKS "Generate the benchmark targets." ON)
+@@ -28,7 +28,7 @@ option(COSMA_WITH_NCCL "Use NCCL as communication backend." OFF)
+ option(COSMA_WITH_RCCL "Use RCCL as communication backend." OFF)
+ option(COSMA_WITH_GPU_AWARE_MPI "Use gpu-aware MPI for communication." OFF)
+ option(BUILD_SHARED_LIBS "Build shared libraries." OFF)
+-set(COSMA_SCALAPACK "OFF" CACHE STRING "scalapack implementation. Can be MKL, CRAY_LIBSCI, CUSTOM or OFF.")
++set(COSMA_SCALAPACK "OFF" CACHE STRING "scalapack implementation. Can be MKL, CRAY_LIBSCI, NVPL, CUSTOM or OFF.")
+ set(COSMA_BLAS "OFF" CACHE STRING "Blas library for computations on host or GPU")
+ 
+ set(COSMA_BLAS_VENDOR "OFF")
+@@ -45,7 +45,7 @@ if (COSMA_BLAS MATCHES "CUDA|ROCM")
+   set(COSMA_GPU_BACKEND ${COSMA_BLAS})
+ else()
+   if(COSMA_BLAS STREQUAL "OFF")
+-    message(FATAL_ERROR "A Blas implementation is needed when running on CPU only: choices are : auto, MKL, OPENBLAS, CRAY_LIBSCI, CUSTOM, BLIS, ATLAS, FLEXIBLAS, ARMPL, GenericBLAS")
++    message(FATAL_ERROR "A Blas implementation is needed when running on CPU only: choices are : auto, MKL, OPENBLAS, CRAY_LIBSCI, NVPL, CUSTOM, BLIS, ATLAS, FLEXIBLAS, ARMPL, GenericBLAS")
+   else()
+     set(COSMA_BLAS_VENDOR ${COSMA_BLAS})
+   endif()
+@@ -72,7 +72,7 @@ endif()
+ 
+ # the blas targets are only defined when COSMA_SCALAPACK is ON whatever value of COSMA_GPU_BACKEND
+ if (NOT COSMA_SCALAPACK MATCHES "OFF")
+-  if (COSMA_SCALAPACK MATCHES "MKL" OR COSMA_SCALAPACK MATCHES "CRAY_LIBSCI")
++  if (COSMA_SCALAPACK MATCHES "MKL" OR COSMA_SCALAPACK MATCHES "CRAY_LIBSCI" OR COSMA_SCALAPACK MATCHES "NVPL")
+     set(COSMA_BLAS_VENDOR ${COSMA_SCALAPACK})
+   else()
+     set(COSMA_BLAS_VENDOR "auto")
+@@ -116,7 +116,7 @@ if (COSMA_WITH_PROFILING)
+ endif ()
+ 
+ if (COSMA_WITH_TESTS OR COSMA_WITH_APPS)
+-  find_package(cxxopts REQUIRED)
++  add_git_submodule_or_find_external(cxxopts libs/cxxopts)
+ endif()
+ 
+ # these are only GPU-backends
+@@ -190,6 +190,7 @@ install(FILES "${cosma_BINARY_DIR}/cosmaConfig.cmake"
+   "${cosma_BINARY_DIR}/cosmaConfigVersion.cmake"
+   "${cosma_BINARY_DIR}/cosmaConfigVersion.cmake"
+   "${cosma_SOURCE_DIR}/cmake/FindMKL.cmake"
++  "${cosma_SOURCE_DIR}/cmake/FindNVPL.cmake"
+   "${cosma_SOURCE_DIR}/cmake/FindBlas.cmake"
+   "${cosma_SOURCE_DIR}/cmake/FindSCALAPACK.cmake"
+   "${cosma_SOURCE_DIR}/cmake/FindOPENBLAS.cmake"
+diff --git a/cmake/FindBlas.cmake b/cmake/FindBlas.cmake
+index aef956c..7eb8572 100644
+--- a/cmake/FindBlas.cmake
++++ b/cmake/FindBlas.cmake
+@@ -2,7 +2,7 @@
+ #
+ # authors : Mathieu Taillefumier
+ 
+-
++include(FindPackageHandleStandardArgs)
+ 
+ if(NOT
+    (CMAKE_C_COMPILER_LOADED
+@@ -21,6 +21,7 @@ set(COSMA_BLAS_VENDOR_LIST
+   "CRAY_LIBSCI"
+   "BLIS"
+   "ATLAS"
++  "NVPL"
+   "OFF")
+ 
+ # COSMA_BLAS_VENDOR should normally be defined here but cosma defines it in the
+@@ -107,8 +108,9 @@ if(COSMA_BLAS_INCLUDE_DIRS)
+     Blas REQUIRED_VARS COSMA_BLAS_LINK_LIBRARIES COSMA_BLAS_INCLUDE_DIRS
+                        COSMA_BLAS_VENDOR)
+ else()
+-  find_package_handle_standard_args(Blas REQUIRED_VARS COSMA_BLAS_LINK_LIBRARIES
+-                                                       COSMA_BLAS_VENDOR)
++  message(WARNING "Blas REQUIRED_VARS '${COSMA_BLAS_LINK_LIBRARIES}' '${COSMA_BLAS_VENDOR}'")
++  find_package_handle_standard_args(
++    Blas REQUIRED_VARS COSMA_BLAS_LINK_LIBRARIES COSMA_BLAS_VENDOR)
+ endif()
+ 
+ if(NOT TARGET cosma::BLAS::blas)
+diff --git a/cmake/FindCRAY_LIBSCI.cmake b/cmake/FindCRAY_LIBSCI.cmake
+index a591095..a145b15 100644
+--- a/cmake/FindCRAY_LIBSCI.cmake
++++ b/cmake/FindCRAY_LIBSCI.cmake
+@@ -9,7 +9,9 @@ find_library(COSMA_CRAY_LIBSCI_LIBRARIES
+     HINTS
+     ${_SCALAPACK_LIBRARY_DIRS}
+     ENV CRAY_LIBSCI_PREFIX_DIR
++    ENV CRAY_PE_LIBSCI_PREFIX_DIR
+     ENV CRAY_LIBSCI_ACC_PREFIX_DIR
++    ENV CRAY_PE_LIBSCI_ACC_PREFIX_DIR
+     PATH_SUFFIXES lib
+     DOC "Path to the Cray-libsci library.")
+ 
+diff --git a/cmake/FindNVPL.cmake b/cmake/FindNVPL.cmake
+new file mode 100644
+index 0000000..e41f589
+--- /dev/null
++++ b/cmake/FindNVPL.cmake
+@@ -0,0 +1,63 @@
++find_package("nvpl_blas" REQUIRED)
++find_package("nvpl_lapack" REQUIRED)
++find_package("nvpl_scalapack" REQUIRED)
++
++if(COSMA_BLAS_INTERFACE STREQUAL "32bits")
++  set(_nvpl_int "_lp64")
++else()
++  set(_nvpl_int "_ilp64")
++endif()
++
++if(COSMA_BLAS_THREADING STREQUAL "openmp")
++  set(_nvpl_thread "_omp")
++else()
++  set(_nvpl_thread "_seq")
++endif()
++
++
++if("${MPI_CXX_LIBRARY_VERSION_STRING}" MATCHES "Open MPI")
++  if(MPI_VERSION VERSION_GREATER_EQUAL "5.0")
++    set(_nvpl_mpi "_openmpi5")
++  elseif(MPI_VERSION VERSION_GREATER_EQUAL "4.0")
++    set(_nvpl_mpi "_openmpi4")
++  else(MPI_VERSION VERSION_GREATER_EQUAL "3.0")
++    set(_nvpl_mpi "_openmpi3")
++  endif()
++else()
++  set(_nvpl_mpi "_mpich")
++endif()
++
++
++if(NOT TARGET "cosma::BLAS::NVPL::nvpl")
++  add_library("cosma::BLAS::NVPL::nvpl" INTERFACE IMPORTED)
++  target_link_libraries("cosma::BLAS::NVPL::nvpl" INTERFACE
++    "nvpl::blas${_nvpl_int}${_nvpl_thread}" "nvpl::lapack${_nvpl_int}${_nvpl_thread}"
++    "nvpl::blacs${_nvpl_int}${_nvpl_mpi}" "nvpl::scalapack${_nvpl_int}")
++
++  get_target_property(COSMA_NVPL_LAPACK_LIBRARIES "nvpl::lapack${_nvpl_int}${_nvpl_thread}" INTERFACE_LINK_LIBRARIES)
++  get_target_property(COSMA_NVPL_SCALAPACK_LIBRARIES "nvpl::scalapack${_nvpl_int}" INTERFACE_LINK_LIBRARIES)
++  get_target_property(COSMA_NVPL_BLAS_INCLUDE_DIRS "nvpl::blas${_nvpl_int}${_nvpl_thread}" INTERFACE_INCLUDE_DIRECTORIES)
++  get_target_property(COSMA_NVPL_LAPACK_INCLUDE_DIRS "nvpl::lapack${_nvpl_int}${_nvpl_thread}" INTERFACE_INCLUDE_DIRECTORIES)
++  get_target_property(COSMA_NVPL_SCALAPACK_INCLUDE_DIRS "nvpl::scalapack${_nvpl_int}" INTERFACE_INCLUDE_DIRECTORIES)
++
++  set_target_properties(
++    cosma::BLAS::NVPL::nvpl 
++    PROPERTIES INTERFACE_LINK_LIBRARIES 
++    "${COSMA_NVPL_LAPACK_LIBRARIES}")
++  set_target_properties(
++    cosma::BLAS::NVPL::nvpl
++    PROPERTIES INTERFACE_INCLUDE_DIRECTORIES 
++    "${COSMA_NVPL_BLAS_INCLUDE_DIRS};${COSMA_NVPL_LAPACK_INCLUDE_DIRS}")
++  
++  add_library(cosma::BLAS::NVPL::blas ALIAS cosma::BLAS::NVPL::nvpl)
++
++  add_library(cosma::BLAS::NVPL::scalapack_link INTERFACE IMPORTED)
++  set_target_properties(
++    cosma::BLAS::NVPL::scalapack_link 
++    PROPERTIES INTERFACE_LINK_LIBRARIES 
++    "${COSMA_NVPL_LAPACK_LIBRARIES};${COSMA_NVPL_SCALAPACK_LIBRARIES}")
++  set_target_properties(
++    cosma::BLAS::NVPL::scalapack_link 
++    PROPERTIES INTERFACE_INCLUDE_DIRECTORIES 
++    "${COSMA_NVPL_BLAS_INCLUDE_DIRS};${COSMA_NVPL_LAPACK_INCLUDE_DIRS};${COSMA_NVPL_SCALAPACK_INCLUDE_DIRS}")
++endif()
+diff --git a/cmake/FindSCALAPACK.cmake b/cmake/FindSCALAPACK.cmake
+index 7614fa4..e8f7733 100644
+--- a/cmake/FindSCALAPACK.cmake
++++ b/cmake/FindSCALAPACK.cmake
+@@ -1,13 +1,18 @@
+ include(FindPackageHandleStandardArgs)
+ 
+ if(COSMA_SCALAPACK STREQUAL "MKL")
+-	find_package(MKL REQUIRED)
++  find_package(MKL REQUIRED)
+   get_target_property(COSMA_SCALAPACK_LINK_LIBRARIES cosma::BLAS::MKL::scalapack_link
+     INTERFACE_LINK_LIBRARIES)
+ elseif(COSMA_SCALAPACK STREQUAL "CRAY_LIBSCI")
+-	find_package(CRAY_LIBSCI REQUIRED)
+-	get_target_property(COSMA_SCALAPACK_LINK_LIBRARIES cosma::BLAS::CRAY_LIBSCI::scalapack_link
++  find_package(CRAY_LIBSCI REQUIRED)
++  get_target_property(COSMA_SCALAPACK_LINK_LIBRARIES cosma::BLAS::CRAY_LIBSCI::scalapack_link
+     INTERFACE_LINK_LIBRARIES)
++elseif(COSMA_SCALAPACK STREQUAL "NVPL")
++  find_package(NVPL REQUIRED)
++  get_target_property(COSMA_SCALAPACK_LINK_LIBRARIES cosma::BLAS::NVPL::scalapack_link
++    INTERFACE_LINK_LIBRARIES)
++  message(WARNING "COSMA_SCALAPACK_LINK_LIBRARIES: ${COSMA_SCALAPACK_LINK_LIBRARIES}")
+ elseif(COSMA_SCALAPACK STREQUAL "CUSTOM")
+   find_library(COSMA_SCALAPACK_LINK_LIBRARIES
+     NAMES scalapack
+@@ -30,10 +35,9 @@ set(COSMA_SCALAPACK_FOUND "YES")
+ 
+ if (NOT TARGET cosma::scalapack::scalapack)
+   add_library(cosma::scalapack::scalapack INTERFACE IMPORTED)
++  set_target_properties(
++    cosma::scalapack::scalapack PROPERTIES INTERFACE_LINK_LIBRARIES
++    "${COSMA_SCALAPACK_LINK_LIBRARIES}")
+ endif()
+ 
+-set_target_properties(
+-  cosma::scalapack::scalapack PROPERTIES INTERFACE_LINK_LIBRARIES
+-  "${COSMA_SCALAPACK_LINK_LIBRARIES}")
+-
+ mark_as_advanced(COSMA_SCALAPACK_LINK_LIBRARIES COSMA_SCALAPACK_FOUND)
+diff --git a/cmake/cosmaConfig.cmake.in b/cmake/cosmaConfig.cmake.in
+index cf7038f..22f9a67 100644
+--- a/cmake/cosmaConfig.cmake.in
++++ b/cmake/cosmaConfig.cmake.in
+@@ -11,7 +11,6 @@ if(NOT TARGET cosma::cosma)
+     set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR} ${CMAKE_MODULE_PATH})
+ 
+     set(MKL_ROOT "@MKL_ROOT@")
+-    set(MPI_CXX_COMPILER "@MPI_CXX_COMPILER@")
+     set(MPI_DETERMINE_LIBRARY_VERSION TRUE)
+     find_package(MPI COMPONENTS "CXX" REQUIRED)
+ 

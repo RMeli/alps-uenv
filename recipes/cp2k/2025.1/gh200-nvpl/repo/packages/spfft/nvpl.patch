@@ -1,5 +1,5 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 3adba85..fc48017 100644
+index 3adba85..5cdfed5 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -53,7 +53,7 @@ set_property(CACHE SPFFT_GPU_BACKEND PROPERTY STRINGS
@@ -24,7 +24,7 @@ index 3adba85..fc48017 100644
  endif()
  
 +# Look for NVPL
-+if(NOT SPFFT_MKL AND ${SPFFT_FFTW_LIB} STREQUAL "AUTO" OR ${SPFFT_FFTW_LIB} STREQUAL "NVPL")
++if(NOT SPFFT_MKL AND NOT SPFFT_ARMPL AND ${SPFFT_FFTW_LIB} STREQUAL "AUTO" OR ${SPFFT_FFTW_LIB} STREQUAL "NVPL")
 +	# 0.4.0 is the first version with the fftw3.h header
 +	find_package("nvpl_fft" 0.4.0 ${_SPFFT_FIND_FFTW_LIB_OPTION})
 +	if(TARGET nvpl::fftw)
@@ -39,6 +39,18 @@ index 3adba85..fc48017 100644
  	find_package(FFTW REQUIRED)
  	list(APPEND SPFFT_EXTERNAL_LIBS FFTW::FFTW)
  	if(SPFFT_SINGLE_PRECISION)
+diff --git a/cmake/SpFFTSharedConfig.cmake b/cmake/SpFFTSharedConfig.cmake
+index e8eeffa..43f014c 100644
+--- a/cmake/SpFFTSharedConfig.cmake
++++ b/cmake/SpFFTSharedConfig.cmake
+@@ -19,6 +19,7 @@ set(SPFFT_CUDA @SPFFT_CUDA@)
+ set(SPFFT_ROCM @SPFFT_ROCM@)
+ set(SPFFT_MKL @SPFFT_MKL@)
+ set(SPFFT_ARMPL @SPFFT_ARMPL@)
++set(SPFFT_NVPL @SPFFT_NVPL@)
+ set(SPFFT_FFTW @SPFFT_FFTW@)
+ 
+ 
 diff --git a/cmake/SpFFTStaticConfig.cmake b/cmake/SpFFTStaticConfig.cmake
 index d03e584..bd3a000 100644
 --- a/cmake/SpFFTStaticConfig.cmake

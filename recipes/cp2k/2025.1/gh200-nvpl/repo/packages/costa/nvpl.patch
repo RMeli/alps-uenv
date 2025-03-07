@@ -87,19 +87,46 @@ index 7b958c7..e40d363 100644
    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/costa")
  
 diff --git a/cmake/FindSCALAPACK.cmake b/cmake/FindSCALAPACK.cmake
-index 8d93527..aac4dc1 100644
+index 8d93527..2b3aebe 100644
 --- a/cmake/FindSCALAPACK.cmake
 +++ b/cmake/FindSCALAPACK.cmake
-@@ -8,6 +8,9 @@ elseif(COSTA_SCALAPACK STREQUAL "CRAY_LIBSCI")
+@@ -8,6 +8,10 @@ elseif(COSTA_SCALAPACK STREQUAL "CRAY_LIBSCI")
    find_package(CRAY_LIBSCI REQUIRED)
    get_target_property(COSTA_SCALAPACK_LINK_LIBRARIES costa::BLAS::SCI::scalapack_link
      INTERFACE_LINK_LIBRARIES)
 +elseif(COSTA_SCALAPACK STREQUAL "NVPL")
 +  find_package(nvpl REQUIRED)
 +  get_target_property(COSTA_SCALAPACK_LINK_LIBRARIES costa::BLAS::NVPL::scalapack_link
++    INTERFACE_LINK_LIBRARIES)
  elseif(COSTA_SCALAPACK STREQUAL "CUSTOM")
    find_library(COSTA_SCALAPACK_LINK_LIBRARIES
      NAMES scalapack
+diff --git a/cmake/Findnvpl.cmake b/cmake/Findnvpl.cmake
+new file mode 100644
+index 0000000..6ba009f
+--- /dev/null
++++ b/cmake/Findnvpl.cmake
+@@ -0,0 +1,20 @@
++find_package("nvpl_blas" REQUIRED)
++find_package("nvpl_lapack" REQUIRED)
++
++if(BLA_SIZEOF_INTEGER EQUAL 8)
++  set(_nvpl_int "_ilp64")
++else()
++  set(_nvpl_int "_lp64")
++endif()
++
++if((BLA_THREAD STREQUAL "OMP") OR (BLA_THREAD STREQUAL "ANY"))
++  set(_nvpl_thread "_omp")
++else()
++  set(_nvpl_thread "_seq")
++endif()
++
++if(NOT TARGET "costa::BLAS::NVPL::scalapack_link")
++  add_library("costa::BLAS::NVPL::scalapack_link" INTERFACE IMPORTED)
++  target_link_libraries("costa::BLAS::NVPL::scalapack_link" INTERFACE
++    "nvpl::blas${_nvpl_int}${_nvpl_thread}" "nvpl::lapack${_nvpl_int}${_nvpl_thread}")
++endif()
 diff --git a/cmake/costaConfig.cmake.in b/cmake/costaConfig.cmake.in
 index 8fae534..a474629 100644
 --- a/cmake/costaConfig.cmake.in
