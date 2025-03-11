@@ -1148,7 +1148,7 @@ class CMakeBuilder(cmake.CMakeBuilder):
         elif blas.name == "nvpl-blas":
             # TODO: ScaLAPACK vendor
             # Maybe better to use the option below and let Spack deal with it, but needs fixes for NVPL-FFT
-            args.append(["-DCP2K_BLAS_VENDOR=NVPL", "-DCP2K_SCALAPACK_VENDOR=NVPL"])
+            args += ["-DCP2K_BLAS_VENDOR=NVPL", "-DCP2K_SCALAPACK_VENDOR=NVPL"]
         else:
             args.extend(
                 [
