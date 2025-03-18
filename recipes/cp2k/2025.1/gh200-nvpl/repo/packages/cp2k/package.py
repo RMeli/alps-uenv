@@ -1122,8 +1122,6 @@ class CMakeBuilder(cmake.CMakeBuilder):
         if "spla" in spec and (spec.satisfies("+cuda") or spec.satisfies("+rocm")):
             args += ["-DCP2K_USE_SPLA_GEMM_OFFLOADING=ON"]
 
-        args += ["-DCP2K_USE_FFTW3=ON"]
-
         if spec.satisfies("smm=libxsmm"):
             args += ["-DCP2K_USE_LIBXSMM=ON"]
         else:
@@ -1148,10 +1146,16 @@ class CMakeBuilder(cmake.CMakeBuilder):
         elif blas.name == "nvpl-blas":
             # TODO: ScaLAPACK vendor
             # Maybe better to use the option below and let Spack deal with it, but needs fixes for NVPL-FFT
-            args += ["-DCP2K_BLAS_VENDOR=NVPL", "-DCP2K_SCALAPACK_VENDOR=NVPL"]
+            args += [
+                self.define("CP2K_BLAS_VENDOR", "NVPL"),
+                self.define("CP2K_SCALAPACK_VENDOR", "NVPL"),
+                self.define("CP2K_SCALAPACK_VENDOR", "NVPL"),
+                self.define("CP2K_USE_FFTW3", False),
+            ]
         else:
             args.extend(
                 [
+                    self.define("CP2K_USE_FFTW3", True),
                     self.define("CP2K_LAPACK_FOUND", True),
                     self.define("CP2K_LAPACK_LINK_LIBRARIES", lapack.libs.joined(";")),
                     self.define("CP2K_BLAS_FOUND", True),

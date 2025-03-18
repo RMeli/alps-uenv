@@ -115,7 +115,12 @@ class CMakeBuilder(cmake.CMakeBuilder):
     def cmake_args(self):
         args = [self.define_from_variant("WITH_OPENMP", "openmp")]
 
-        if self.spec.satisfies("^nvpl-blas"):
+        if self.spec.satisfies("+openmp"):
+            args.append(self.define("BLA_THREAD", "OMP"))
+        else:
+            args.append(self.define("BLA_THREAD", "SEQ"))
+
+        if self.spec.satisfies("^[virtuals=blas] nvpl-blas"):
             args.append(self.define("BLA_VENDOR", "NVPL"))
 
         return args
