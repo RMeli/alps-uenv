@@ -1,5 +1,5 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 0bd59d9..d6f9f80 100644
+index 0bd59d9..f67a729 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -13,7 +13,7 @@
@@ -33,19 +33,6 @@ index 0bd59d9..d6f9f80 100644
  )
  if(WITH_OpenMP)
    target_link_libraries(
-@@ -139,6 +139,12 @@ install(
-   "LICENSE"
-   DESTINATION "${CMAKE_INSTALL_DATADIR}/licenses/${PROJECT_NAME}"
- )
-+install(
-+  DIRECTORY ${PROJECT_SOURCE_DIR}/config/cmake/
-+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
-+  FILES_MATCHING
-+  PATTERN "Find*.cmake"
-+)
- 
- # add the testsuite
- if(WITH_TESTS)
 diff --git a/config/CMakeLists.txt b/config/CMakeLists.txt
 index 873a5ef..310812c 100644
 --- a/config/CMakeLists.txt
@@ -137,10 +124,10 @@ index 0167a62..0000000
 -endif()
 diff --git a/config/cmake/Findmulticharge-blas.cmake b/config/cmake/Findmulticharge-blas.cmake
 new file mode 100644
-index 0000000..dc76851
+index 0000000..20a3a54
 --- /dev/null
 +++ b/config/cmake/Findmulticharge-blas.cmake
-@@ -0,0 +1,52 @@
+@@ -0,0 +1,53 @@
 +# This file is part of multicharge.
 +# SPDX-Identifier: Apache-2.0
 +#
@@ -165,6 +152,7 @@ index 0000000..dc76851
 +  set(_nvpl_int "_ilp64")
 +else()
 +  set(_nvpl_int "_lp64")
++  set(BLA_SIZEOF_INTEGER 4)
 +endif()
 +
 +if(NOT MULTICHARGE_BLAS_FOUND)
@@ -195,10 +183,10 @@ index 0000000..dc76851
 +find_package_handle_standard_args(multicharge-blas DEFAULT_MSG MULTICHARGE_BLAS_FOUND)
 diff --git a/config/cmake/Findmulticharge-lapack.cmake b/config/cmake/Findmulticharge-lapack.cmake
 new file mode 100644
-index 0000000..95b939e
+index 0000000..a1b9efb
 --- /dev/null
 +++ b/config/cmake/Findmulticharge-lapack.cmake
-@@ -0,0 +1,58 @@
+@@ -0,0 +1,59 @@
 +# This file is part of multicharge.
 +# SPDX-Identifier: Apache-2.0
 +#
@@ -223,6 +211,7 @@ index 0000000..95b939e
 +  set(_nvpl_int "_ilp64")
 +else()
 +  set(_nvpl_int "_lp64")
++  set(BLA_SIZEOF_INTEGER 4)
 +endif()
 +
 +if(NOT TARGET "multicharge::BLAS")

@@ -1,8 +1,8 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index a03f7d4009..fa2e43b88c 100644
+index 8dd2c1ab07..1c558aa0d4 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -180,7 +180,7 @@ set(CP2K_BLAS_VENDOR
+@@ -185,7 +185,7 @@ set(CP2K_BLAS_VENDOR
      "auto"
      CACHE STRING "Blas library for computations on host")
  
@@ -11,7 +11,7 @@ index a03f7d4009..fa2e43b88c 100644
  set(CP2K_SCALAPACK_VENDOR
      "auto"
      CACHE STRING "scalapack vendor/generic backend")
-@@ -188,7 +188,8 @@ set_property(CACHE CP2K_SCALAPACK_VENDOR PROPERTY STRINGS
+@@ -193,7 +193,8 @@ set_property(CACHE CP2K_SCALAPACK_VENDOR PROPERTY STRINGS
                                                    ${CP2K_SCALAPACK_VENDOR_LIST})
  
  if(NOT ${CP2K_SCALAPACK_VENDOR} IN_LIST CP2K_SCALAPACK_VENDOR_LIST)
@@ -20,8 +20,8 @@ index a03f7d4009..fa2e43b88c 100644
 +                      "Valid options are: ${CP2K_SCALAPACK_VENDOR_LIST}")
  endif()
  
- set(CP2K_BUILD_OPTIONS_LIST "CUSTOM" "DEFAULT" "MINIMAL" "FULL" "SERIAL")
-@@ -619,7 +620,18 @@ endif()
+ set(CP2K_DATA_DIR
+@@ -539,7 +540,15 @@ endif()
  # we set this variable to ON when we want fftw3 support (with or without MKL).
  set(CP2K_USE_FFTW3_ OFF)
  if(CP2K_USE_FFTW3)
@@ -31,17 +31,14 @@ index a03f7d4009..fa2e43b88c 100644
 +    set(CP2K_USE_FFTW3_MKL_ ON)
 +  elseif(CP2K_BLAS_VENDOR STREQUAL "NVPL")
 +    message("-- Using the NVPL implementation of FFTW3.")
-+    if(CP2K_ENABLE_FFTW3_THREADS_SUPPORT OR CP2K_ENABLE_FFTW3_OPENMP_SUPPORT)
-+      message(
-+        FATAL_ERROR
-+        "NVPL FFTW has not threads/OpenMP support.")
-+    endif()
++    set(CP2K_ENABLE_FFTW3_THREADS_SUPPORT OFF)
++    set(CP2K_ENABLE_FFTW3_OPENMP_SUPPORT OFF)
 +    set(CP2K_USE_FFTW3_ ON)
 +  else()
      find_package(Fftw REQUIRED)
      if(CP2K_ENABLE_FFTW3_THREADS_SUPPORT AND CP2K_ENABLE_FFTW3_OPENMP_SUPPORT)
        message(
-@@ -643,9 +655,6 @@ if(CP2K_USE_FFTW3)
+@@ -563,9 +572,6 @@ if(CP2K_USE_FFTW3)
        )
      endif()
      set(CP2K_USE_FFTW3_ ON)

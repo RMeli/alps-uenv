@@ -1150,7 +1150,7 @@ class CMakeBuilder(cmake.CMakeBuilder):
                 self.define("CP2K_BLAS_VENDOR", "NVPL"),
                 self.define("CP2K_SCALAPACK_VENDOR", "NVPL"),
                 self.define("CP2K_SCALAPACK_VENDOR", "NVPL"),
-                self.define("CP2K_USE_FFTW3", False),
+                self.define("CP2K_USE_FFTW3", True),
             ]
         else:
             args.extend(

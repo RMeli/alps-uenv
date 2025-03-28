@@ -50,7 +50,7 @@ cp2k:
   - sirius +dlaf +elpa +scalapack
   # CP2K
   - dbcsr@2.8.0
-  - cp2k@git.867ac96446e0d75f5bb87e65dd7309e94f1184de=2025.2 +libxc +libint +spglib +cosma +spla +elpa +dlaf +sirius +plumed +dftd4 lmax=5 build_system=cmake
+  - cp2k@git.3f462081c59b59dbbfdacd629c4f4fc555e08c6a=2025.2 +libxc +libint +spglib +cosma +spla +elpa +dlaf +sirius +plumed +dftd4 lmax=5 build_system=cmake
   variants:
     - +mpi
     - +openmp
