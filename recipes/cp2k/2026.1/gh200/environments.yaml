@@ -5,7 +5,7 @@ cp2k:
   - cmake
   - ninja
   - libtool@2.4.6
-  - cuda@12.4 # Can't be newer than driver version, for DBCSR
+  - cuda@12.9
   - openblas threads=openmp
   - netlib-scalapack
   - fftw
@@ -16,7 +16,7 @@ cp2k:
   - plumed
   - libvori
   # py-torch
-  - py-torch ~nccl ~distributed +custom-protobuf
+  - py-torch@2.10 ~nccl ~distributed +custom-protobuf
   - protobuf
   - py-protobuf
   # libint
@@ -36,7 +36,7 @@ cp2k:
   - blt
   - camp
   # DLA-Future
-  - dla-future@0.10.0 +mpi_gpu_aware +mpi_gpu_force_contiguous +scalapack +miniapps +hdf5
+  - dla-future@git.dlaf-redistribution-simple=master +mpi_gpu_aware +mpi_gpu_force_contiguous +scalapack +miniapps +hdf5
   - blaspp
   - lapackpp
   - dla-future-fortran@0.5.0
