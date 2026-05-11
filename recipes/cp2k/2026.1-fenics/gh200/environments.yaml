@@ -1,0 +1,49 @@
+cp2k:
+  compiler: [gcc]
+  unify: true
+  specs:
+  - cmake
+  - ninja
+  - libtool@2.4.6
+  - cuda@12
+  - openblas threads=openmp
+  - netlib-scalapack
+  - fftw
+  - libxc ~cuda
+  - spglib
+  - spla
+  - elpa
+  # libint
+  - libint
+  - eigen@3
+  # DFTD4
+  - dftd4
+  - multicharge
+  - mctc-lib~openmp
+  # COSMA
+  - tiled-mm
+  - costa
+  - cosma +gpu_direct
+  - hdf5
+  # CP2K
+  - dbcsr@2.9.1
+  - cp2k@2026.1 +libxc +libint +spglib +cosma +spla +elpa +dftd4 lmax=5 build_system=cmake
+  # fenics
+  - fenics-dolfinx +adios2
+  - py-fenics-dolfinx cflags="-O3" fflags="-O3"
+  variants:
+    - +mpi
+    - +openmp
+    - +cuda
+    - cuda_arch=90
+    - build_type=Release
+  network:
+    mpi: cray-mpich@8.1.32 +cuda
+    specs:
+      - libfabric@2.4 +gdrcopy
+  views:
+    develop:
+      link: roots
+      exclude: ["cp2k"]
+    cp2k:
+      link: roots
